@@ -55,6 +55,21 @@ body{background:#2559d6;background-image:radial-gradient(#ffffff22 2px,transpare
 .creator{display:grid;grid-template-columns:64px 160px 64px;justify-content:center;align-items:center;gap:10px;position:relative;margin:10px 0;padding:12px;border-radius:18px;background:#2559d633}
 .creator #dice{position:absolute;top:6px;right:6px}.col{display:flex;flex-direction:column;gap:18px}
 .arr{border:3px solid var(--line);background:var(--yel);border-radius:10px;font-size:1.2rem;padding:6px;cursor:pointer;color:#2b2350;box-shadow:0 3px 0 var(--line)}.arr:active{transform:translateY(2px)}
+.room{grid-template-columns:200px 1fr 290px}.room>div:last-child{display:contents}
+.room>div:last-child>.card:first-child{grid-column:1;grid-row:1;align-self:start}.room>#stage{grid-column:2;grid-row:1}.room>div:last-child>.card:last-child{grid-column:3;grid-row:1;align-self:start}
+@media(max-width:900px){.room{grid-template-columns:1fr}.room>#stage,.room>div:last-child>.card{grid-column:1!important;grid-row:auto!important}}
+.chat{height:340px}.pl b{color:var(--mut)}.pl .sc{font-size:.8rem}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:10px}.clk{width:52px;height:52px;border-radius:50%;border:4px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.3rem;background:var(--yel);color:#2b2350}
+.hint{flex:1;text-align:center;font-weight:700;font-size:.8rem;color:var(--mut)}.hint span{font-size:1.7rem;letter-spacing:5px;color:var(--ink)}
+.lobby{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}select{border:3px solid var(--line);border-radius:12px;padding:6px 10px;background:var(--bg);font:inherit;color:inherit}
+.sz{width:34px;height:34px;border-radius:10px;border:3px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.sz i{background:var(--ink);border-radius:50%;display:block}.sz.on{background:var(--yel)}
+.felt{background:radial-gradient(circle at 50% 45%,#ff9f43,#e0392b 62%,#8e1a14);border-radius:20px;padding:14px;min-height:520px;display:flex;flex-direction:column;justify-content:space-between}
+.opps{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}.op{text-align:center;color:#fff;font-weight:600;padding:4px 8px}.op small{display:block}
+.fanh{display:flex;justify-content:center;padding:8px 0}.fanh .uc{margin-left:-22px;flex:none}.fanh .uc:first-child{margin-left:0}.op .uc{width:34px;height:50px;font-size:.6rem}
+.fanh.me{margin-top:8px;overflow-x:auto;padding-top:20px;position:relative}.fanh.me .uc:not(.no):hover{transform:translateY(-18px)}.you{position:absolute;left:0;top:0;color:#fff;font-weight:700}
+.uc{position:relative;transition:transform .12s}.uc i{font-style:normal;background:#fff;color:#2b2350;border-radius:50%;width:72%;padding:8px 0;text-align:center;transform:rotate(-20deg)}.uc.y i{color:#b58900}
+.uc.cb{background:#1d1838}.uc.cb i{background:#ff5c6c;color:#ffc928;font-size:.8em;padding:6px 0}.uc.big i{font-size:1.2rem;padding:12px 0}
+.mid{display:flex;align-items:center;justify-content:center;gap:22px;margin:14px 0}.ring{font-size:3rem;color:#fff;opacity:.8}.msg.w{color:#fff;text-shadow:0 2px 0 #0006}
 </style></head><body>
 <div class="wrap">
 
@@ -122,9 +137,9 @@ const GAMES={
 };
 const EM=['🦊','🐼','🐸','🦄','🐙','🐯','🐵','🦖','🐰','🐧','🦁','🐳'];
 const WORDS=['pizza','rocket','banana','guitar','elephant','castle','umbrella','robot','volcano','butterfly','snowman','bicycle','dragon','cupcake','lighthouse','octopus','pirate','sunflower','airplane','ice cream'];
-const COLORS=['#2b2350','#ff5c6c','#ffc928','#2ecc8f','#4c8dff','#8a5cff','#ffffff'];
+const COLORS=['#000000','#ffffff','#ff5c6c','#ff9a3c','#ffc928','#8be04e','#2ecc8f','#33c6ee','#4c8dff','#8a5cff','#ff7ac8','#8b5a2b'];
 const $=id=>document.getElementById(id);
-const S={av:'0.0.0',game:'pictionary',room:null,code:'',peers:[],me:null,word:null,drawer:null,wlen:0,color:COLORS[0],muted:false,score:0};
+const S={size:6,dt:80,av:'0.0.0',game:'pictionary',room:null,code:'',peers:[],me:null,word:null,drawer:null,wlen:0,color:COLORS[0],muted:false,score:0};
 let ctx;
 // title
 $('title').innerHTML=[...'Party Palace'].map(c=>c===' '?' ':'<span>'+c+'</span>').join('');
@@ -164,16 +179,17 @@ async function enter(code){
     const host=S.peers.find(p=>!p.isMe&&p.presence.game);if(host&&!S.gameSynced){S.gameSynced=1;S.game=host.presence.game;$('gname').textContent=GAMES[S.game].ic+' '+GAMES[S.game].n;buildStage()}});
   r.on('chat',m=>{say('',A(m.data.av)+' <b>'+esc(m.data.n)+'</b>: '+esc(m.data.t));beep(880,.05);
     if(S.drawer&&S.me&&S.drawer===S.me.peer&&S.word&&m.data.t.trim().toLowerCase()===S.word&&!m.isMe)r.emit('correct',{peer:m.peer,n:m.data.n,w:S.word})});
-  r.on('round',m=>{S.drawer=m.peer;S.wlen=m.data.len;S.word=m.isMe?S.word:null;S.solved=false;clearCv();buildStage();say('sys',esc(m.data.n||'Someone')+' is drawing!');beep(520)});
+  r.on('round',m=>{S.drawer=m.peer;S.wlen=m.data.len;S.endAt=Date.now()+(m.data.dt||80)*1000;S.rn=(S.rn||0)+1;S.word=m.isMe?S.word:null;S.solved=false;clearCv();buildStage();say('sys',esc(m.data.n||'Someone')+' is drawing!');beep(520)});
   r.on('stroke',m=>{if(!m.isMe)seg(m.data)});
   r.on('clear',m=>{if(!m.isMe)clearCv()});
+  r.on('timeup',m=>{say('sys','⏰ Time up! The word was '+esc(m.data.w||'?'));S.drawer=null;S.word=null;S.endAt=0;S.solved=true;buildStage()});
   r.on('act',m=>{if(!isHost())return;const a=m.data,g=S.gs;if(a.t==='sync'){if(g)pub();return}
     if(a.t==='start'){S.gs=S.game==='uno'?unoNew():ludoNew();pub();return}
     if(!g||g.win||g.pl[g.t]!==m.peer)return;(g.g==='uno'?unoAct:ludoAct)(g,a);pub()});
   r.on('state',m=>{S.gs=m.data;buildStage();paid();beep(600,.06)});
   setTimeout(()=>r.emit('act',{t:'sync'}),900);
   r.on('correct',m=>{if(S.solved)return;S.solved=true;say('sys','🎉 '+esc(m.data.n)+' guessed it: '+esc(m.data.w)+'!');cheer();
-    if(S.me&&m.data.peer===S.me.peer)bump(100);else if(S.me&&S.drawer===S.me.peer)bump(50);S.drawer=null;S.word=null;buildStage()});
+    if(S.me&&m.data.peer===S.me.peer)bump(100);else if(S.me&&S.drawer===S.me.peer)bump(50);S.drawer=null;S.word=null;S.endAt=0;buildStage()});
   buildStage();say('sys','Welcome! Share code '+code.toUpperCase()+' with friends.');
 }
 async function bump(n){S.score+=n;await S.room.presence({score:S.score})}
@@ -183,29 +199,33 @@ $('leave').onclick=()=>location.reload();
 function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 function say(cls,h){const d=document.createElement('div');d.className=cls;d.innerHTML=h;$('chat').append(d);$('chat').scrollTop=1e9}
 function renderPeers(){const ps=[...S.peers].sort((a,b)=>(b.presence.score||0)-(a.presence.score||0));
-  $('plist').innerHTML=ps.map(p=>`<div class="pl"><span class="e">${A(p.presence.av)}</span><span class="n">${esc(p.presence.name||'Player')}${p.isMe?' (you)':''}${S.drawer===p.peer?' ✏️':''}</span><span class="sc">${p.presence.score||0}</span></div>`).join('')}
+  $('plist').innerHTML=ps.map((p,i)=>`<div class="pl"><b>#${i+1}</b><span class="e">${A(p.presence.av)}</span><span class="n">${esc(p.presence.name||'Player')}${p.isMe?' (you)':''}${S.drawer===p.peer?' ✏️':''}</span><span class="sc">${p.presence.score||0} pts</span></div>`).join('')}
 function sendChat(){const t=$('msg').value.trim();if(!t||!S.room)return;$('msg').value='';
   S.room.emit('chat',{t,n:$('nick').value.trim()||'Player',av:S.av});}
 $('send').onclick=sendChat;$('msg').onkeydown=e=>{if(e.key==='Enter')sendChat()};
 // stage
 function buildStage(){renderPeers();const st=$('stage');if(S.game!=='pictionary')return cardGame(st);
-  if(!GAMES[S.game].live){st.innerHTML=`<div style="text-align:center;padding:30px"><div style="font-size:4rem">${GAMES[S.game].ic}</div><h2>${GAMES[S.game].n} is coming soon!</h2><p style="color:var(--mut)">Chat with friends and read the rules while the board is being built.</p><button class="btn b" onclick="showRules('${S.game}')">📖 Read the rules</button></div>`;return}
-  const iDraw=S.me&&S.drawer===S.me.peer;
-  st.innerHTML=`<div class="word">${iDraw?'Draw: '+esc(S.word||''):S.drawer?'_ '.repeat(S.wlen).trim():'Waiting for a drawer…'}</div><canvas id="cv" width="800" height="600"></canvas>
-  <div class="tools">${iDraw?COLORS.map(c=>`<button class="sw${c===S.color?' on':''}" style="background:${c}" data-c="${c}"></button>`).join('')+'<button class="btn s" id="clr">🧽 Clear</button>':''}
-  ${S.drawer?'':'<button class="btn g" id="go">🖍️ I’ll draw!</button>'}</div>`;
+  const iDraw=S.me&&S.drawer===S.me.peer,hint=iDraw?esc(S.word||''):S.drawer?'_ '.repeat(S.wlen).trim():'';
+  st.innerHTML=`<div class="top"><div class="clk" id="clk">${S.drawer?Math.max(0,Math.ceil((S.endAt-Date.now())/1000)):S.dt}</div><b>Round ${S.rn||1}</b><div class="hint">${iDraw?'DRAW THIS':S.drawer?'GUESS THIS':'WAITING'}<br><span>${hint}</span></div></div>
+  <canvas id="cv" width="800" height="600"></canvas>
+  ${S.drawer?'':`<div class="lobby"><b>\u23f1 Draw time</b> <select id="dt">${[30,60,80,120].map(n=>`<option${n===S.dt?' selected':''}>${n}</option>`).join('')}</select> <button class="btn g" id="go">\U0001F58D\ufe0f I\u2019ll draw!</button></div>`}
+  ${iDraw?`<div class="tools">${COLORS.map(c=>`<button class="sw${c===S.color?' on':''}" style="background:${c}" data-c="${c}"></button>`).join('')}${[3,6,12,20].map(z=>`<button class="sz${z===S.size?' on':''}" data-z="${z}"><i style="width:${z}px;height:${z}px"></i></button>`).join('')}<button class="btn s" id="clr">\U0001F9FD Clear</button></div>`:''}`;
   ctx=$('cv').getContext('2d');ctx.lineCap='round';ctx.lineJoin='round';
   if(iDraw)bindDraw();
-  const go=$('go');if(go)go.onclick=()=>{S.word=WORDS[Math.random()*WORDS.length|0];S.room.emit('round',{len:S.word.length,n:$('nick').value.trim()||'Player'})};
+  const dt=$('dt');if(dt)dt.onchange=()=>S.dt=+dt.value;
+  const go=$('go');if(go)go.onclick=()=>{S.word=WORDS[Math.random()*WORDS.length|0];S.room.emit('round',{len:S.word.length,n:$('nick').value.trim()||'Player',dt:S.dt})};
   st.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{S.color=b.dataset.c;st.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b))});
+  st.querySelectorAll('.sz').forEach(b=>b.onclick=()=>{S.size=+b.dataset.z;st.querySelectorAll('.sz').forEach(x=>x.classList.toggle('on',x===b))});
   const c=$('clr');if(c)c.onclick=()=>{clearCv();S.room.emit('clear',{})};
 }
+setInterval(()=>{const k=$('clk');if(S.drawer&&S.endAt){const t=Math.max(0,Math.ceil((S.endAt-Date.now())/1000));if(k)k.textContent=t;
+  if(!t&&S.me&&S.drawer===S.me.peer&&S.word){const w=S.word;S.endAt=0;S.room.emit('timeup',{w})}}},500);
 function clearCv(){if(ctx)ctx.clearRect(0,0,800,600)}
 function seg(d){if(!ctx)return;ctx.strokeStyle=d.c;ctx.lineWidth=d.w;ctx.beginPath();ctx.moveTo(d.x0*800,d.y0*600);ctx.lineTo(d.x1*800,d.y1*600);ctx.stroke()}
 function bindDraw(){const cv=$('cv');let last=null,buf=[],t=0;
   const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]};
   cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);last=pt(e)};
-  cv.onpointermove=e=>{if(!last)return;const p=pt(e),d={x0:last[0],y0:last[1],x1:p[0],y1:p[1],c:S.color,w:S.color==='#ffffff'?22:6};seg(d);S.room.emit('stroke',d);last=p};
+  cv.onpointermove=e=>{if(!last)return;const p=pt(e),d={x0:last[0],y0:last[1],x1:p[0],y1:p[1],c:S.color,w:S.size*(S.color==='#ffffff'?3:1)};seg(d);S.room.emit('stroke',d);last=p};
   cv.onpointerup=cv.onpointercancel=()=>{last=null}}
 document.head.insertAdjacentHTML('beforeend','<style>.hand{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;justify-content:center}.uc{width:54px;height:78px;border-radius:10px;border:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.3rem;color:#fff;cursor:pointer;box-shadow:0 3px 0 var(--line)}.uc.r{background:#ff5c6c}.uc.y{background:#ffc928;color:#2b2350}.uc.g{background:#2ecc8f}.uc.b{background:#4c8dff}.uc.k{background:#2b2350}.uc.no{opacity:.4;cursor:default}.uc.big{width:76px;height:108px;font-size:2rem;cursor:default}.turn{outline:3px solid var(--pur);border-radius:10px}.opp{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-weight:600}.opp span{padding:2px 8px}.msg{text-align:center;font-weight:700;margin:8px 0}</style>');
 const hostP=()=>S.peers.map(p=>p.peer).sort()[0],isHost=()=>S.me&&S.me.peer===hostP(),pub=()=>S.room.emit('state',S.gs);
@@ -228,19 +248,19 @@ function unoAct(g,a){const p=g.pl[g.t],n=g.pl.length,nx=()=>(g.t+g.dir+n)%n;
   if(!g.h[p].length){g.win=p;return}
   const v=c[1];if(v==='R'){g.dir*=-1;if(n===2)return}else if(v==='S')g.t=nx();else if(v==='D'){g.t=nx();udraw(g,g.pl[g.t],2)}else if(v==='F'){g.t=nx();udraw(g,g.pl[g.t],4)}
   g.t=nx()}
-const ulab=c=>({S:'⊘',R:'⇄',D:'+2',W:'★',F:'+4'}[c[1]]||c[1]);
-function unoUI(g,st){const me=S.me.peer,mine=g.h[me],my=g.pl[g.t]===me&&!g.win;
-  st.innerHTML=`<div class="opp">${g.pl.map(p=>`<span class="${g.pl[g.t]===p?'turn':''}">${nm(p)}: ${g.h[p].length}🃏</span>`).join('')}</div>
-  <div class="hand"><div class="uc big ${g.col}">${ulab(g.top)}</div></div><p class="msg">${g.msg} · ${g.win?'':my?'Your turn!':'Turn: '+nm(g.pl[g.t])}</p>${again(g)}
-  ${S.pend!=null?'<p class="msg">Pick a color:</p><div class="hand">'+'rygb'.split('').map(c=>`<div class="uc ${c}" data-col="${c}">●</div>`).join('')+'</div>':''}
-  ${mine?`<div class="hand">${mine.map((c,i)=>`<div class="uc ${c[0]} ${my&&(c[0]==='k'||c[0]===g.col||c[1]===g.top[1])?'':'no'}" data-i="${i}">${ulab(c)}</div>`).join('')}</div>`:'<p class="msg">👀 Spectating</p>'}
-  ${my?'<p style="text-align:center"><button class="btn r" id="dr">Draw a card</button></p>':''}`;
+const ulab=c=>({S:'\u2298',R:'\u21c4',D:'+2',W:'\u2605',F:'+4'}[c[1]]||c[1]);
+function unoUI(g,st){const me=S.me.peer,mine=g.h[me],my=g.pl[g.t]===me&&!g.win,others=g.pl.filter(p=>p!==me),ok=c=>my&&(c[0]==='k'||c[0]===g.col||c[1]===g.top[1]);
+  st.innerHTML=`<div class="felt"><div class="opps">${others.map(p=>`<div class="op ${g.pl[g.t]===p?'turn':''}">${nm(p)}<div class="fanh">${g.h[p].slice(0,12).map(()=>'<div class="uc cb"><i>UNO</i></div>').join('')}</div><small>${g.h[p].length} cards</small></div>`).join('')||'<p class="msg w">Waiting for opponents\u2026</p>'}</div>
+  <div class="mid"><div class="dk" id="dr" style="${my?'cursor:pointer;outline:4px solid #fff;border-radius:12px':''}"><div class="uc cb big"><i>UNO</i></div></div><div class="uc big ${g.col}"><i>${ulab(g.top)}</i></div><div class="ring">${g.dir>0?'\u21bb':'\u21ba'}</div></div>
+  <p class="msg w">${g.msg} \u00b7 ${g.win?'':my?'Your turn! Play a card or tap the pile':'Turn: '+nm(g.pl[g.t])}</p>${again(g)}
+  ${S.pend!=null?'<p class="msg w">Pick a color:</p><div class="hand">'+'rygb'.split('').map(c=>`<div class="uc ${c}" data-col="${c}"><i>\u25cf</i></div>`).join('')+'</div>':''}
+  ${mine?`<div class="fanh me"><div class="you">YOU</div>${mine.map((c,i)=>`<div class="uc ${c[0]} ${ok(c)?'':'no'}" data-i="${i}"><i>${ulab(c)}</i></div>`).join('')}</div>`:'<p class="msg w">\U0001F440 Spectating</p>'}</div>`;
   const s=$('st');if(s)s.onclick=()=>S.room.emit('act',{t:'start'});
-  const d=$('dr');if(d)d.onclick=()=>{S.pend=null;S.room.emit('act',{t:'draw'})};
+  const d=$('dr');if(d&&my)d.onclick=()=>{S.pend=null;S.room.emit('act',{t:'draw'})};
   st.querySelectorAll('[data-i]:not(.no)').forEach(e=>e.onclick=()=>{const i=+e.dataset.i;if(mine[i][0]==='k'){S.pend=i;unoUI(g,st)}else{S.pend=null;S.room.emit('act',{t:'play',i})}});
   st.querySelectorAll('[data-col]').forEach(e=>e.onclick=()=>{S.room.emit('act',{t:'play',i:S.pend,col:e.dataset.col});S.pend=null})}
 // ---- LUDO
-const LS=[0,13,26,39],LC=['#ff5c6c','#4c8dff','#ffc928','#2ecc8f'],SAFE=[0,8,13,21,26,34,39,47];
+const LS=[0,13,26,39],LC=['#ff5c6c','#2ecc8f','#ffc928','#4c8dff'],SAFE=[0,8,13,21,26,34,39,47];
 function ludoNew(){const pl=S.peers.map(p=>p.peer).sort().slice(0,4),tok={};pl.forEach(p=>tok[p]=[-1,-1,-1,-1]);return{g:'ludo',id:Math.random(),pl,tok,t:0,roll:null,win:null,msg:'Roll the dice!'}}
 const lab=(i,s)=>(LS[i]+s)%52;
 function lmoves(g,p){const r=g.roll;return g.tok[p].map((s,k)=>s<0?(r===6?k:-1):(s+r<=56?k:-1)).filter(k=>k>=0)}
@@ -250,16 +270,21 @@ function ludoAct(g,a){const p=g.pl[g.t],adv=()=>{g.t=(g.t+1)%g.pl.length;g.roll=
     if(T[a.k]<=50){const c=lab(g.t,T[a.k]);if(!SAFE.includes(c))g.pl.forEach((q,j)=>{if(q!==p)g.tok[q]=g.tok[q].map(x=>x>=0&&x<=50&&lab(j,x)===c?-1:x)})}
     if(T.every(x=>x===56)){g.win=p;return}
     if(g.roll===6)g.roll=null;else adv()}}
-function ludoUI(g,st){const me=S.me.peer,my=g.pl[g.t]===me&&!g.win,mv=my&&g.roll!==null?lmoves(g,me):[];
-  const ang=c=>c/52*2*Math.PI-Math.PI/2,po=(a,r)=>[250+r*Math.cos(a),250+r*Math.sin(a)];
-  const tp=(i,s,k)=>{if(s<0){const [x,y]=po(ang(LS[i]+6.5),222);return[x+(k%2)*24-12,y+(k>>1)*24-12]}
-    if(s<=50)return po(ang(lab(i,s)),170);if(s<56)return po(ang((LS[i]+51)%52),170-(s-50)*24);const [x,y]=po(ang(LS[i]),22);return[x+(k-1.5)*9,y]};
-  let sv='';for(let c=0;c<52;c++){const [x,y]=po(ang(c),170),si=LS.indexOf(c);sv+=`<circle cx="${x}" cy="${y}" r="9" fill="${si>=0?LC[si]:'var(--bg)'}" stroke="var(--line)" stroke-width="${SAFE.includes(c)?3.5:1.5}"/>`}
-  for(let i=0;i<4;i++)for(let s=51;s<56;s++){const [x,y]=po(ang((LS[i]+51)%52),170-(s-50)*24);sv+=`<circle cx="${x}" cy="${y}" r="8" fill="${LC[i]}" opacity=".4"/>`}
-  g.pl.forEach((p,i)=>g.tok[p].forEach((s,k)=>{const [x,y]=tp(i,s,k),can=p===me&&mv.includes(k);sv+=`<circle cx="${x}" cy="${y}" r="11" fill="${LC[i]}" stroke="${can?'#fff':'var(--line)'}" stroke-width="${can?5:2.5}" ${can?`data-k="${k}" style="cursor:pointer"`:''}/>`}));
-  st.innerHTML=`<svg viewBox="0 0 500 500" style="width:100%;max-height:70vh">${sv}<text x="250" y="262" text-anchor="middle" font-size="34">🎲</text></svg>
-  <p class="msg">${g.msg}${g.roll?' · now pick a glowing token':''} · ${g.win?'':'Turn: '+nm(g.pl[g.t])}</p>${again(g)}
-  <p style="text-align:center">${g.pl.indexOf(me)<0?'👀 Spectating':my&&g.roll===null?'<button class="btn g" id="rl">🎲 Roll</button>':''} <span style="color:var(--mut)">You are ${LC.length&&g.pl.indexOf(me)>=0?['red','blue','yellow','green'][g.pl.indexOf(me)]:'–'}</span></p>`;
+const RING=(()=>{const r=[],a=(x,y)=>r.push([x,y]);for(let x=1;x<=5;x++)a(x,6);for(let y=5;y>=0;y--)a(6,y);a(7,0);for(let y=0;y<=5;y++)a(8,y);for(let x=9;x<=14;x++)a(x,6);a(14,7);a(14,8);for(let x=13;x>=9;x--)a(x,8);for(let y=9;y<=14;y++)a(8,y);a(7,14);a(6,14);for(let y=13;y>=9;y--)a(6,y);for(let x=5;x>=0;x--)a(x,8);a(0,7);a(0,6);return r})();
+const HC=[s=>[1+s,7],s=>[7,1+s],s=>[13-s,7],s=>[7,13-s]],YO=[[0,0],[9,0],[9,9],[0,9]],CN=['red','green','yellow','blue'];
+function ludoUI(g,st){const me=S.me.peer,my=g.pl[g.t]===me&&!g.win,mv=my&&g.roll!==null?lmoves(g,me):[],ci=g.pl.indexOf(me);
+  const yd=(i,k)=>[YO[i][0]+1.9+(k%2)*2.2,YO[i][1]+1.9+(k>>1)*2.2];
+  const tp=(i,s,k)=>s<0?yd(i,k):s<=50?RING[(LS[i]+s)%52].map(v=>v+.5):s<56?HC[i](s-51).map(v=>v+.5):[7.5+[-.6,0,.6,0][i]+(k-1.5)*.1,7.5+[0,-.6,0,.6][i]];
+  let sv='';
+  LC.forEach((c,i)=>{sv+=`<rect x="${YO[i][0]}" y="${YO[i][1]}" width="6" height="6" fill="${c}"/><rect x="${YO[i][0]+1}" y="${YO[i][1]+1}" width="4" height="4" rx=".5" fill="#fff"/>`;for(let k=0;k<4;k++){const[x,y]=yd(i,k);sv+=`<circle cx="${x}" cy="${y}" r=".5" fill="${c}" opacity=".3"/>`}});
+  RING.forEach(([x,y],c)=>{const si=LS.indexOf(c);sv+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${si>=0?LC[si]:'#fff'}" stroke="#555" stroke-width=".05"/>`+(SAFE.includes(c)&&si<0?`<text x="${x+.5}" y="${y+.78}" font-size=".8" text-anchor="middle" fill="#999">\u2605</text>`:'')});
+  LC.forEach((c,i)=>{for(let s=0;s<5;s++){const[x,y]=HC[i](s);sv+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${c}" stroke="#555" stroke-width=".05"/>`}});
+  sv+=`<polygon points="6,6 6,9 7.5,7.5" fill="${LC[0]}"/><polygon points="6,6 9,6 7.5,7.5" fill="${LC[1]}"/><polygon points="9,6 9,9 7.5,7.5" fill="${LC[2]}"/><polygon points="6,9 9,9 7.5,7.5" fill="${LC[3]}"/>`;
+  g.pl.forEach((p,i)=>g.tok[p].forEach((s,k)=>{const[x,y]=tp(i,s,k),can=p===me&&mv.includes(k);sv+=`<circle cx="${x}" cy="${y}" r=".38" fill="${LC[i]}" stroke="${can?'#fff':'#2b2350'}" stroke-width="${can?.18:.1}" ${can?`data-k="${k}" style="cursor:pointer"`:''}/>`}));
+  st.innerHTML=`<div class="opp" style="margin-bottom:8px">${g.pl.map((p,i)=>`<span class="${g.pl[g.t]===p?'turn':''}" style="background:${LC[i]};border-radius:99px;color:#2b2350;padding:2px 10px">${nm(p)}</span>`).join('')}</div>
+  <svg viewBox="-.15 -.15 15.3 15.3" style="width:100%;max-width:600px;display:block;margin:auto;background:#fff;border:3px solid #2b2350;border-radius:14px">${sv}</svg>
+  <p class="msg">${g.msg}${g.roll?' \u00b7 pick a glowing token':''} ${g.win?'':'\u00b7 Turn: '+nm(g.pl[g.t])}</p>${again(g)}
+  <p style="text-align:center">${ci<0?'\U0001F440 Spectating':my&&g.roll===null?'<button class="btn g" id="rl">\U0001F3B2 Roll</button>':''} <span style="color:var(--mut)">${ci>=0?'You are '+CN[ci]:''}</span> ${g.roll?`<span style="font-size:2.4rem;vertical-align:middle">${'\u2680\u2681\u2682\u2683\u2684\u2685'[g.roll-1]}</span>`:''}</p>`;
   const s=$('st');if(s)s.onclick=()=>S.room.emit('act',{t:'start'});
   const r=$('rl');if(r)r.onclick=()=>S.room.emit('act',{t:'roll'});
   st.querySelectorAll('[data-k]').forEach(e=>e.onclick=()=>S.room.emit('act',{t:'move',k:+e.dataset.k}))}
